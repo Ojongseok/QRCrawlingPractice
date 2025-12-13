@@ -58,11 +58,8 @@ dependencies {
     // Permissions
     implementation("com.google.accompanist:accompanist-permissions:0.35.1-alpha")
 
-    // Jsoup for web crawling
-    implementation("org.jsoup:jsoup:1.17.2")
-
-    // Coroutines
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
+    // Coil for image loading
+    implementation("io.coil-kt:coil-compose:2.5.0")
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
