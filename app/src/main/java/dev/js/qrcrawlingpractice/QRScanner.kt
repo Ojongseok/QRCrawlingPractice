@@ -235,6 +235,7 @@ fun QRScannerScreen(onUrlDetected: (String) -> Unit) {
 
         // Display detected QR code
         detectedQRCode?.let { qrCode ->
+            Log.d("WebViewURL", qrCode.toString())
             Column(
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
