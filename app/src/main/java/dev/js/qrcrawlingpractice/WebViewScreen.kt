@@ -93,40 +93,57 @@ fun WebViewScreen(url: String, onImageUrlDetected: (String) -> Unit, onBackPress
                         ): android.webkit.WebResourceResponse? {
                             val url = request?.url.toString()
 
-                            // Photoism: S3 이미지 URL 감지
-                            if (url.contains("photoism-cms-prd.s3.ap-northeast-2.amazonaws.com", ignoreCase = true) &&
-                                (url.endsWith(".jpg", ignoreCase = true) || url.endsWith(".png", ignoreCase = true))) {
+                            // Photoism
+                            if (url.contains("photoism-cms-prd.s3.ap-northeast-2.amazonaws.com") &&
+                                (url.endsWith(".jpg") || url.endsWith(".png"))) {
 
-                                Log.d("Photoism", "=== S3 Image URL Detected ===")
                                 Log.d("Photoism", "Image URL: $url")
-                                Log.d("Photoism", "========================")
+
+                                Handler(Looper.getMainLooper()).post {
+                                    onImageUrlDetected(url)
+                                }
+                            } else if ((url.contains("photoqr.kr/R/") || url.contains("photoqr3.kr/R/")) &&
+                                (url.endsWith("o.png") || url.endsWith("video.mp4"))) {
+                                // Photosignature
+
+                                // 경로에서 마지막 파일명을 a.jpg로 교체
+                                val basePath = url.substringBeforeLast("/")
+                                val imageUrl = "$basePath/a.jpg"
+
+                                Log.d("Photosignature", "Original URL: $url")
+                                Log.d("Photosignature", "Image URL: $imageUrl")
+
+                                Handler(Looper.getMainLooper()).post {
+                                    onImageUrlDetected(imageUrl)
+                                }
+                            } else if (url.contains("release-renewal-s3.s3.ap-northeast-2.amazonaws.com/QRimage") && url.contains(".jpg")) {
+                                // 인생네컷
+                                Log.d("LifeFourCut", "Image URL: $url")
+
+                                Handler(Looper.getMainLooper()).post {
+                                    onImageUrlDetected(url)
+                                }
+                            } else if (url.contains("haru4.mx2.co.kr") && url.contains("output.jpg")) {
+                                // 하루필름
+                                Log.d("HaruFilm", "Image URL: $url")
+
+                                Handler(Looper.getMainLooper()).post {
+                                    onImageUrlDetected(url)
+                                }
+                            } else if (url.contains("kr.object.ncloudstorage.com/photostudio-qr/monomansion") &&
+                                url.contains("COMPLETE.jpg")) {
+                                // 모노맨션
+                                Log.d("MonoMansion", "Image URL: $url")
 
                                 Handler(Looper.getMainLooper()).post {
                                     onImageUrlDetected(url)
                                 }
                             }
 
-                            // Photosignature: 경로 패턴 감지 (o.png, video.mp4 등)
-                            if ((url.contains("photoqr.kr/R/", ignoreCase = true) ||
-                                 url.contains("photoqr3.kr/R/", ignoreCase = true)) &&
-                                (url.endsWith("o.png", ignoreCase = true) ||
-                                 url.endsWith("video.mp4", ignoreCase = true))) {
-
-                                // 경로에서 마지막 파일명을 a.jpg로 교체
-                                val basePath = url.substringBeforeLast("/")
-                                val imageUrl = "$basePath/a.jpg"
-
-                                Log.d("Photosignature", "=== Path Pattern Detected ===")
-                                Log.d("Photosignature", "Original URL: $url")
-                                Log.d("Photosignature", "Image URL: $imageUrl")
-                                Log.d("Photosignature", "========================")
-
-                                Handler(Looper.getMainLooper()).post {
-                                    onImageUrlDetected(imageUrl)
-                                }
+                            // 모든 요청 로깅 (더 상세하게)
+                            if (url.contains("mono-mansion") || url.contains("monomansion")) {
+                                Log.d("MonoMansion-Request", "Request: $url")
                             }
-
-                            // 모든 요청 로깅
                             Log.d("WebViewRequest", "Request: $url")
 
                             return super.shouldInterceptRequest(view, request)
@@ -177,7 +194,7 @@ fun WebViewScreen(url: String, onImageUrlDetected: (String) -> Unit, onBackPress
                         Log.d("WebViewDownload", "Detected brand: ${brand?.name ?: "Unknown"}")
 
                         brand?.let {
-                            handleBrandDownload(it, this, onImageUrlDetected)
+//                            handleBrandDownload(it, this, onImageUrlDetected)
                         }
                     }
 
@@ -198,6 +215,8 @@ sealed class PhotoBrand(
     object PhotoGray : PhotoBrand("PhotoGray", listOf("pg-qr-resource.aprd.io", "photogray-download.aprd.io"))
     object Photoism : PhotoBrand("Photoism", listOf("qr.seobuk.kr"))
     object Photosignature : PhotoBrand("Photosignature", listOf("photoqr.kr", "photoqr3.kr"))
+    object LifeFourCut : PhotoBrand("LifeFourCut", listOf("life4cut"))
+    object MonoMansion : PhotoBrand("MonoMansion", listOf("mono-mansion", "monomansion"))
     // 추가 브랜드는 여기에 정의
 }
 
@@ -206,22 +225,25 @@ private fun detectBrand(downloadUrl: String, currentPageUrl: String?): PhotoBran
     val urlToCheck = "$downloadUrl $currentPageUrl"
 
     return when {
-        PhotoBrand.PhotoGray.keywords.any { urlToCheck.contains(it, ignoreCase = true) } -> PhotoBrand.PhotoGray
-        PhotoBrand.Photoism.keywords.any { urlToCheck.contains(it, ignoreCase = true) } -> PhotoBrand.Photoism
-        PhotoBrand.Photosignature.keywords.any { urlToCheck.contains(it, ignoreCase = true) } -> PhotoBrand.Photosignature
+        PhotoBrand.PhotoGray.keywords.any { urlToCheck.contains(it) } -> PhotoBrand.PhotoGray
+        PhotoBrand.Photoism.keywords.any { urlToCheck.contains(it) } -> PhotoBrand.Photoism
+        PhotoBrand.Photosignature.keywords.any { urlToCheck.contains(it) } -> PhotoBrand.Photosignature
+        PhotoBrand.LifeFourCut.keywords.any { urlToCheck.contains(it) } -> PhotoBrand.LifeFourCut
+        PhotoBrand.MonoMansion.keywords.any { urlToCheck.contains(it) } -> PhotoBrand.MonoMansion
         else -> null
     }
 }
 
 
 // 브랜드별 다운로드 처리
-private fun handleBrandDownload(brand: PhotoBrand, webView: WebView, onImageUrlDetected: (String) -> Unit) {
-    when (brand) {
-        is PhotoBrand.PhotoGray -> extractPhotoGrayImageUrl(webView, onImageUrlDetected)
-        is PhotoBrand.Photoism -> extractPhotoismImageUrl(webView, onImageUrlDetected)
-        is PhotoBrand.Photosignature -> extractPhotosignatureImageUrl(webView, onImageUrlDetected)
-    }
-}
+//private fun handleBrandDownload(brand: PhotoBrand, webView: WebView, onImageUrlDetected: (String) -> Unit) {
+//    when (brand) {
+//        is PhotoBrand.PhotoGray -> extractPhotoGrayImageUrl(webView, onImageUrlDetected)
+//        is PhotoBrand.Photoism -> extractPhotoismImageUrl(webView, onImageUrlDetected)
+//        is PhotoBrand.Photosignature -> extractPhotosignatureImageUrl(webView, onImageUrlDetected)
+//        is PhotoBrand.LifeFourCut -> extractPhotosignatureImageUrl(webView, onImageUrlDetected)
+//    }
+//}
 
 // PhotoGray 이미지 URL 추출
 private fun extractPhotoGrayImageUrl(webView: WebView, onImageUrlDetected: (String) -> Unit) {
