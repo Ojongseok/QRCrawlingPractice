@@ -94,16 +94,14 @@ fun WebViewScreen(url: String, onImageUrlDetected: (String) -> Unit, onBackPress
                             val url = request?.url.toString()
 
                             // Photoism
-                            if (url.contains("photoism-cms-prd.s3.ap-northeast-2.amazonaws.com") &&
-                                (url.endsWith(".jpg") || url.endsWith(".png"))) {
+                            if (url.contains("photoism-cms-prd.s3.ap-northeast-2.amazonaws.com") && url.endsWith(".jpg")) {
 
                                 Log.d("Photoism", "Image URL: $url")
 
                                 Handler(Looper.getMainLooper()).post {
                                     onImageUrlDetected(url)
                                 }
-                            } else if ((url.contains("photoqr.kr/R/") || url.contains("photoqr3.kr/R/")) &&
-                                (url.endsWith("o.png") || url.endsWith("video.mp4"))) {
+                            } else if ((url.contains("photoqr.kr/R/") || url.contains("photoqr3.kr/R/")) && url.endsWith("o.png")) {
                                 // Photosignature
 
                                 // 경로에서 마지막 파일명을 a.jpg로 교체
